@@ -21,7 +21,7 @@ def get_tourist(tourist_id: int, db: Session = Depends(get_db)):
     return touriste_controller.get_tourist_by_id(db, tourist_id)
 
 @router.put("/{tourist_id}", response_model=schemas.ItemResponse)
-def update_tourist(tourist_id: int, tourist_data: schemas.ItemCreate, db: Session = Depends(get_db)):
+def update_tourist(tourist_id: int, tourist_data: schemas.ItemUpdate, db: Session = Depends(get_db)):
     return touriste_controller.update_tourist(db, tourist_id, tourist_data)
 
 @router.delete("/{tourist_id}", status_code=status.HTTP_204_NO_CONTENT)

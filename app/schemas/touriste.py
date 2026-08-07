@@ -1,13 +1,16 @@
-from pydantic import BaseModel
+from pydantic import BaseModel,  ConfigDict, EmailStr
 
 class ItemBase(BaseModel):
     name: str
+    email : EmailStr
 
 class ItemCreate(ItemBase):
-    pass  # Utilisé pour la création (POST)
+    pass
+
+class ItemUpdate(ItemBase):
+    name : str | None = None
+    email : EmailStr | None = None
 
 class ItemResponse(ItemBase):
     id: int
-
-    class Config:
-        from_attributes = True  # Permet la lecture depuis SQLAlchemy
+    model_config = ConfigDict(from_attributes=True)

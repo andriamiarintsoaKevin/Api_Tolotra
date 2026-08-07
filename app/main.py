@@ -6,14 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
 from app.routers import touriste as touriste_router
-from app.exceptions import TouristNotFoundException
+from app.exceptions import AppException
 
 # 1. Génération des tables dans la base de données (si elles n'existent pas ou on a pas encore alembic)
 # Base.metadata.create_all(bind=engine)
 
 # 2. Instanciation de l'application FastAPI
 app = FastAPI(
-    title="API de Gestion des Touristes",
+    title="API de Gestion",
     description="API REST avec FastAPI, SQLAlchemy et PostgreSQL",
     version="1.0.0"
 )
@@ -41,14 +41,17 @@ app.add_middleware(
 )
 
 
-
-
 # 4. Enregistrement des Handlers d'exceptions personnalisées
-@app.exception_handler(TouristNotFoundException)
-def tourist_not_found_exception_handler(request: Request, exc: TouristNotFoundException):
+# Gestionnaire d'exception global
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
     return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
-        content={"detail": f"Le touriste avec l'ID {exc.tourist_id} n'existe pas."}
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "message": exc.message,
+            "path": str(request.url.path)
+        }
     )
 
 # 5. Inclusion des différents Routeurs d'entités
