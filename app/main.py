@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
 from app.routers import touriste as touriste_router
+from app.routers import auth as auth_router
 from app.exceptions import AppException
 
 # 1. Génération des tables dans la base de données (si elles n'existent pas ou on a pas encore alembic)
@@ -56,6 +57,8 @@ async def app_exception_handler(request: Request, exc: AppException):
 
 # 5. Inclusion des différents Routeurs d'entités
 app.include_router(touriste_router.router)
+app.include_router(auth_router.router)      # 2. Inclusion du routeur d'authentification
+
 # Si vous ajoutez d'autres entités plus tard :
 # app.include_router(user_router.router)
 # app.include_router(hotel_router.router)
@@ -63,4 +66,4 @@ app.include_router(touriste_router.router)
 # 6. Route de vérification / Health check (optionnel mais très utile)
 @app.get("/", tags=["Root"])
 def read_root():
-    return {"status": "ok", "message": "Bienvenue sur l'API de gestion des touristes"}
+    return {"status": "ok", "message": "Bienvenue sur l'API de gestion"}
