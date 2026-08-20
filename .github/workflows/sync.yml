@@ -13,12 +13,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false  # Désactive le jeton automatique du bot
 
       - name: Pousser vers le Compte B
         env:
           TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
-          git config --global user.name "andriamiarintsoaKevin"
-          git config --global user.email "votre-email@example.com"
-          git remote add target https://pixel-dev-26:${TOKEN}@github.com/pixel-dev-26/api_fast_gstock.git
+          git remote add target https://oauth2:${TOKEN}@github.com/pixel-dev-26/api_fast_gstock.git
           git push -u target main --force
