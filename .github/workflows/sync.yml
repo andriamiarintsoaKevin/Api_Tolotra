@@ -6,19 +6,17 @@ on:
       - main
 
 jobs:
-  repo-sync:
+  sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Récupérer le code
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Synchronisation vers Compte B
-        uses: repo-sync/github-sync@v2
+      - name: Pousser vers le Compte B
+        uses: ad-m/github-push-action@master
         with:
-          source_repo: "andriamiarintsoaKevin/Api_Tolotra"
-          source_branch: "main"
-          destination_repo: "pixel-dev-26/api_fast_gstock"
-          destination_branch: "main"
           github_token: ${{ secrets.SYNC_TOKEN }}
+          repository: "pixel-dev-26/api_fast_gstock.git"
+          branch: "main"
