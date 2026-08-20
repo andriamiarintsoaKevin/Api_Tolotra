@@ -3,20 +3,22 @@ name: Synchronisation automatique
 on:
   push:
     branches:
-      - main  # Remplacez par 'master' si votre branche principale s'appelle master
+      - main
 
 jobs:
-  git-sync:
+  repo-sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Recuperer le code
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Synchroniser vers Compte B
+      - name: Synchronisation vers Compte B
         uses: repo-sync/github-sync@v2
         with:
-          target_repo_token: ${{ secrets.SYNC_TOKEN }}
-          destination_repo: "https://github.com/pixel-dev-26/api_fast_gstock.git"
+          source_repo: "andriamiarintsoaKevin/Api_Tolotra"
+          source_branch: "main"
+          destination_repo: "pixel-dev-26/api_fast_gstock"
           destination_branch: "main"
+          github_token: ${{ secrets.SYNC_TOKEN }}
