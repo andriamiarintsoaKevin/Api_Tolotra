@@ -9,12 +9,16 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Récupérer tout l'historique
+      - name: Récupérer le projet
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Pousser directement vers le Compte B
+      - name: Pousser vers le Compte B
+        env:
+          TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
-          git remote add target https://x-access-token:${{ secrets.SYNC_TOKEN }}@github.com/pixel-dev-26/api_fast_gstock.git
-          git push --force target main
+          git config --global user.name "andriamiarintsoaKevin"
+          git config --global user.email "votre-email@example.com"
+          git remote add target https://pixel-dev-26:${TOKEN}@github.com/pixel-dev-26/api_fast_gstock.git
+          git push -u target main --force
