@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.core.dependencies import oauth2_scheme
+from app.core.dependencies import oauth2_scheme, get_current_user
 from app.controllers.auth import AuthController
 from app.schemas.auth import (
     GoogleAuthSchema,
@@ -10,8 +10,9 @@ from app.schemas.auth import (
     VerifyOTPSchema, 
     TokenResponse
 )
+from app.models.users import User;
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
 
 
 # 1. Endpoint Google Auth (1 Clic)
@@ -40,3 +41,9 @@ def verify_otp(payload: VerifyOTPSchema, db: Session = Depends(get_db)):
 @router.post("/logout", response_model=LogoutResponse)
 def logout(token: str = Depends(oauth2_scheme)): 
     return AuthController.logout_user(token)
+
+@router.get("/me")
+def get_current_user_info(current_user: User = Depends(get_current_user)):
+    # Si le token dans le header Bearer est valide, cette fonction s'exécute
+    return {"id": current_user.id, "email": current_user.email}
+

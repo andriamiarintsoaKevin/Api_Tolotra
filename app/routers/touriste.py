@@ -11,7 +11,7 @@ from app.models.users import User
 from app.core.dependencies import get_current_user 
 
 router = APIRouter(
-    prefix="/touristes", 
+    prefix="/v1/touristes", 
     tags=["Touristes"], 
     dependencies=[Depends(get_current_user)] # Protège TOUTES les routes du fichier d'un seul coup !
 )
