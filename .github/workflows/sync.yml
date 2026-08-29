@@ -1,0 +1,24 @@
+name: Synchronisation automatique
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    if: github.repository == 'andriamiarintsoaKevin/Api_Tolotra'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le projet
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Pousser vers le Compte B
+        env:
+          TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          git remote add target https://oauth2:${TOKEN}@github.com/Pixel-dev-26/api_fast_gstock.git
+          git push -u target main --force
