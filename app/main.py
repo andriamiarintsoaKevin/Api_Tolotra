@@ -1,24 +1,23 @@
 import os
 
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from app.database import engine, Base
-from app.routers import touriste as touriste_router
+from app.database import Base, engine
+from app.exceptions import AppException
 from app.routers import auth as auth_router
 from app.routers import category as category_router
+from app.routers import movement as movement_router
 from app.routers import product as product_router
-from app.exceptions import AppException
+from app.routers import touriste as touriste_router
 
-# 1. Génération des tables dans la base de données (si elles n'existent pas ou on a pas encore alembic)
-# Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
-# 2. Instanciation de l'application FastAPI
 app = FastAPI(
-    title="API de Gestion",
-    description="API REST avec FastAPI, SQLAlchemy et PostgreSQL",
-    version="1.0.0"
+    title="API de Gestion de Stock",
+    description="API REST pour la gestion de stock, catégories et mouvements de stock",
+    version="1.0.0",
 )
 
 # 3. Configuration du CORS (pour autoriser le Front-End / React / Vue / Flutter à communiquer)
@@ -59,9 +58,10 @@ async def app_exception_handler(request: Request, exc: AppException):
 
 # 5. Inclusion des différents Routeurs d'entités
 app.include_router(touriste_router.router)
-app.include_router(auth_router.router)      # 2. Inclusion du routeur d'authentification
-app.include_router(category_router.router)  # Gestion des catégories de stock
-app.include_router(product_router.router)   # Gestion des produits de stock
+app.include_router(auth_router.router)
+app.include_router(category_router.router)
+app.include_router(product_router.router)
+app.include_router(movement_router.router)
 
 # Si vous ajoutez d'autres entités plus tard :
 # app.include_router(hotel_router.router)

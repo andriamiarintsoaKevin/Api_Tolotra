@@ -3,8 +3,8 @@ from typing import List
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str
-    SECRET_KEY: str
+    DATABASE_URL: str = "sqlite:///./stock.db"
+    SECRET_KEY: str = "development-secret-key"
     DEBUG: bool = True
     ALLOWED_ORIGINS: str = "*" 
 

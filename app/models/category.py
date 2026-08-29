@@ -11,8 +11,8 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Relation vers les produits (one-to-many)
-    # 'back_populates' crée le lien bidirectionnel avec Product.category
     products: Mapped[list["Product"]] = relationship(
-        "Product", back_populates="category", cascade="all, delete-orphan"
+        "Product",
+        back_populates="category",
+        cascade="all, delete-orphan",
     )

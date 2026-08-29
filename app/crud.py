@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+from typing import Sequence
+
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app import models
+from app.schemas.category import CategoryCreate, CategoryUpdate
+from app.schemas.product import ProductCreate, ProductUpdate
+from app.schemas.stock_movement import MovementType as MovementTypeSchema, StockMovementCreate
+
+
+def _get_category_or_404(db: Session, category_id: int) -> models.Category:
+    stmt = select(models.Category).where(models.Category.id == category_id)
+    category = db.scalar(stmt)
+    if not category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Catégorie introuvable")
+    return category
+
+
+def _get_product_or_404(db: Session, product_id: int) -> models.Product:
+    stmt = select(models.Product).where(models.Product.id == product_id)
+    product = db.scalar(stmt)
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produit introuvable")
+    return product
+
+
+def create_category(db: Session, category_data: CategoryCreate) -> models.Category:
+    existing = db.scalar(select(models.Category).where(models.Category.name == category_data.name))
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"La catégorie '{category_data.name}' existe déjà")
+    category = models.Category(**category_data.model_dump())
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+def get_categories(db: Session, skip: int = 0, limit: int = 100) -> Sequence[models.Category]:
+    stmt = select(models.Category).offset(skip).limit(limit)
+    return db.scalars(stmt).all()
+
+
+def get_category_by_id(db: Session, category_id: int) -> models.Category:
+    return _get_category_or_404(db, category_id)
+
+
+def update_category(db: Session, category_id: int, category_data: CategoryUpdate) -> models.Category:
+    category = _get_category_or_404(db, category_id)
+    update_data = category_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(category, field, value)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+def delete_category(db: Session, category_id: int) -> None:
+    category = _get_category_or_404(db, category_id)
+    db.delete(category)
+    db.commit()
+
+
+def create_product(db: Session, product_data: ProductCreate) -> models.Product:
+    _get_category_or_404(db, product_data.category_id)
+    product = models.Product(**product_data.model_dump())
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+def get_products(db: Session, skip: int = 0, limit: int = 100) -> Sequence[models.Product]:
+    stmt = select(models.Product).offset(skip).limit(limit)
+    return db.scalars(stmt).all()
+
+
+def get_product_by_id(db: Session, product_id: int) -> models.Product:
+    return _get_product_or_404(db, product_id)
+
+
+def update_product(db: Session, product_id: int, product_data: ProductUpdate) -> models.Product:
+    product = _get_product_or_404(db, product_id)
+    if product_data.category_id is not None:
+        _get_category_or_404(db, product_data.category_id)
+    update_data = product_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(product, field, value)
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+def delete_product(db: Session, product_id: int) -> None:
+    product = _get_product_or_404(db, product_id)
+    db.delete(product)
+    db.commit()
+
+
+def create_stock_movement(db: Session, movement_data: StockMovementCreate) -> models.StockMovement:
+    product = _get_product_or_404(db, movement_data.product_id)
+    movement_type = models.MovementType(movement_data.movement_type.value)
+
+    if movement_type == models.MovementType.IN:
+        product.quantity += movement_data.quantity
+    elif movement_type == models.MovementType.OUT:
+        if product.quantity < movement_data.quantity:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Stock insuffisant")
+        product.quantity -= movement_data.quantity
+
+    stock_movement = models.StockMovement(
+        product_id=product.id,
+        quantity=movement_data.quantity,
+        movement_type=movement_type,
+        reason=movement_data.reason,
+    )
+    db.add(stock_movement)
+    db.commit()
+    db.refresh(stock_movement)
+    return stock_movement
+
+
+def list_stock_movements(
+    db: Session,
+    product_id: int | None = None,
+    movement_type: MovementTypeSchema | None = None,
+) -> Sequence[models.StockMovement]:
+    stmt = select(models.StockMovement)
+    if product_id is not None:
+        stmt = stmt.where(models.StockMovement.product_id == product_id)
+    if movement_type is not None:
+        stmt = stmt.where(models.StockMovement.movement_type == models.MovementType(movement_type.value))
+    stmt = stmt.order_by(models.StockMovement.created_at.desc())
+    return db.scalars(stmt).all()
