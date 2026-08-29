@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routers import touriste as touriste_router
 from app.routers import auth as auth_router
+from app.routers import category as category_router
+from app.routers import product as product_router
 from app.exceptions import AppException
 
 # 1. Génération des tables dans la base de données (si elles n'existent pas ou on a pas encore alembic)
@@ -58,9 +60,10 @@ async def app_exception_handler(request: Request, exc: AppException):
 # 5. Inclusion des différents Routeurs d'entités
 app.include_router(touriste_router.router)
 app.include_router(auth_router.router)      # 2. Inclusion du routeur d'authentification
+app.include_router(category_router.router)  # Gestion des catégories de stock
+app.include_router(product_router.router)   # Gestion des produits de stock
 
 # Si vous ajoutez d'autres entités plus tard :
-# app.include_router(user_router.router)
 # app.include_router(hotel_router.router)
 
 # 6. Route de vérification / Health check (optionnel mais très utile)
