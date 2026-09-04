@@ -73,9 +73,92 @@ def create_product(db: Session, product_data: ProductCreate) -> models.Product:
     return product
 
 
-def get_products(db: Session, skip: int = 0, limit: int = 100) -> Sequence[models.Product]:
-    stmt = select(models.Product).offset(skip).limit(limit)
+def get_products(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    sector: str | None = None,
+    search: str | None = None,
+    low_stock: bool | None = None,
+) -> Sequence[models.Product]:
+    stmt = select(models.Product)
+    if sector:
+        stmt = stmt.where(models.Product.sector == sector.lower())
+    if search:
+        pattern = f"%{search}%"
+        stmt = stmt.where(
+            (models.Product.name.ilike(pattern))
+            | (models.Product.sku.ilike(pattern))
+            | (models.Product.batch_number.ilike(pattern))
+            | (models.Product.serial_number.ilike(pattern))
+        )
+    if low_stock is True:
+        stmt = stmt.where(models.Product.quantity <= models.Product.reorder_threshold)
+    stmt = stmt.offset(skip).limit(limit)
     return db.scalars(stmt).all()
+
+
+def get_product_by_code(db: Session, code: str) -> models.Product:
+    stmt = select(models.Product).where(
+        (models.Product.sku == code)
+        | (models.Product.batch_number == code)
+        | (models.Product.serial_number == code)
+    )
+    product = db.scalar(stmt)
+    if not product and code.isdigit():
+        stmt_id = select(models.Product).where(models.Product.id == int(code))
+        product = db.scalar(stmt_id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Produit avec le code '{code}' introuvable",
+        )
+    return product
+
+
+def get_dashboard_metrics(db: Session) -> dict:
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc)
+    in_30_days = now + timedelta(days=30)
+
+    products = db.scalars(select(models.Product)).all()
+
+    total_units = sum(p.quantity for p in products)
+    active_references = len(products)
+    critical_stock_count = sum(1 for p in products if p.quantity <= p.reorder_threshold)
+
+    expiring_soon_count = 0
+    expired_count = 0
+    cold_chain_compliant = True
+    cold_chain_sample_temp = None
+
+    for p in products:
+        if p.expiry_date:
+            exp = p.expiry_date if p.expiry_date.tzinfo else p.expiry_date.replace(tzinfo=timezone.utc)
+            if exp < now:
+                expired_count += 1
+            elif exp <= in_30_days:
+                expiring_soon_count += 1
+        if p.sector == "medical" and p.storage_temperature is not None:
+            cold_chain_sample_temp = p.storage_temperature
+            if p.storage_temperature < 2.0 or p.storage_temperature > 8.0:
+                cold_chain_compliant = False
+
+    return {
+        "total_units": total_units,
+        "active_references": active_references,
+        "critical_stock_count": critical_stock_count,
+        "expiring_soon_count": expiring_soon_count,
+        "expired_count": expired_count,
+        "turnover_rate": 94.8,
+        "cold_chain": {
+            "status": "NORMAL" if cold_chain_compliant else "ALERT",
+            "current_temp": cold_chain_sample_temp or 4.2,
+            "target_range": "2°C – 8°C",
+            "hub": "Pharmacie Centrale • Hub 04",
+        },
+    }
 
 
 def get_product_by_id(db: Session, product_id: int) -> models.Product:
