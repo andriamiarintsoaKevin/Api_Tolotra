@@ -130,7 +130,7 @@ def get_dashboard_metrics(db: Session) -> dict:
 
     expiring_soon_count = 0
     expired_count = 0
-    cold_chain_compliant = True
+    cold_chain_compliant = None
     cold_chain_sample_temp = None
 
     for p in products:
@@ -142,6 +142,7 @@ def get_dashboard_metrics(db: Session) -> dict:
                 expiring_soon_count += 1
         if p.sector == "medical" and p.storage_temperature is not None:
             cold_chain_sample_temp = p.storage_temperature
+            cold_chain_compliant = cold_chain_compliant is not False
             if p.storage_temperature < 2.0 or p.storage_temperature > 8.0:
                 cold_chain_compliant = False
 
@@ -151,12 +152,16 @@ def get_dashboard_metrics(db: Session) -> dict:
         "critical_stock_count": critical_stock_count,
         "expiring_soon_count": expiring_soon_count,
         "expired_count": expired_count,
-        "turnover_rate": 94.8,
+        "turnover_rate": None,
         "cold_chain": {
-            "status": "NORMAL" if cold_chain_compliant else "ALERT",
-            "current_temp": cold_chain_sample_temp or 4.2,
+            "status": (
+                "NO_DATA"
+                if cold_chain_compliant is None
+                else "NORMAL" if cold_chain_compliant else "ALERT"
+            ),
+            "current_temp": cold_chain_sample_temp,
             "target_range": "2°C – 8°C",
-            "hub": "Pharmacie Centrale • Hub 04",
+            "hub": None,
         },
     }
 
