@@ -4,7 +4,15 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user
-from app.crud import create_product, delete_product, get_product_by_id, get_products, update_product
+from app.crud import (
+    create_product,
+    delete_product,
+    get_dashboard_metrics,
+    get_product_by_code,
+    get_product_by_id,
+    get_products,
+    update_product,
+)
 from app.database import get_db
 from app.schemas.product import ProductCreate, ProductResponse, ProductUpdate
 
@@ -27,9 +35,34 @@ def create_product_route(
 def get_products_route(
     skip: int = 0,
     limit: int = 100,
+    sector: str | None = None,
+    search: str | None = None,
+    low_stock: bool | None = None,
     db: Session = Depends(get_db),
 ):
-    return get_products(db, skip=skip, limit=limit)
+    return get_products(
+        db,
+        skip=skip,
+        limit=limit,
+        sector=sector,
+        search=search,
+        low_stock=low_stock,
+    )
+
+
+@router.get("/dashboard/stats")
+def get_dashboard_stats_route(
+    db: Session = Depends(get_db),
+):
+    return get_dashboard_metrics(db)
+
+
+@router.get("/scan/{code}", response_model=ProductResponse)
+def scan_product_route(
+    code: str,
+    db: Session = Depends(get_db),
+):
+    return get_product_by_code(db, code)
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
